@@ -5,585 +5,328 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CutOut — 배경 투명화</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
-
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0e0e0f;
-    --surface: #18181a;
-    --surface2: #222224;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.15);
-    --text: #f0f0ee;
-    --text2: #888884;
-    --text3: #555552;
-    --accent: #c8f55a;
-    --accent-dim: rgba(200,245,90,0.12);
-    --red: #ff5c5c;
-    --radius: 12px;
-    --radius-sm: 8px;
+    --bg: #0e0e0f; --s1: #18181a; --s2: #222224; --s3: #2a2a2d;
+    --b1: rgba(255,255,255,0.07); --b2: rgba(255,255,255,0.14);
+    --t1: #f0f0ee; --t2: #888884; --t3: #555552;
+    --ac: #c8f55a; --ac2: rgba(200,245,90,0.10);
+    --green: #64dc82; --red: #ff5c5c; --r: 10px; --rs: 6px;
   }
-
-  html { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  html { background: var(--bg); color: var(--t1); font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
   body { min-height: 100vh; display: flex; flex-direction: column; }
 
-  /* ── HEADER ── */
   header {
-    padding: 1.5rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--b1);
+    position: sticky; top: 0; background: rgba(14,14,15,0.92); backdrop-filter: blur(12px); z-index: 10;
   }
-  .logo { font-size: 1.1rem; font-weight: 500; letter-spacing: -0.02em; }
-  .logo span { color: var(--accent); }
-  .badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    padding: 3px 10px;
-    border: 1px solid var(--border2);
-    border-radius: 999px;
-    color: var(--text2);
+  .logo { font-size: 1rem; font-weight: 500; letter-spacing: -0.02em; }
+  .logo span { color: var(--ac); }
+  .pill { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 3px 10px; border: 1px solid var(--b2); border-radius: 999px; color: var(--t3); }
+
+  main { flex: 1; max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; width: 100%; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 300; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 0.6rem; }
+  h1 em { font-style: italic; color: var(--ac); }
+  .sub { color: var(--t2); font-size: 0.88rem; margin-bottom: 2.5rem; line-height: 1.65; }
+
+  #init-banner {
+    background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r);
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem; font-size: 0.85rem; color: var(--t2);
   }
+  #init-banner.hidden { display: none; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--b2); border-top-color: var(--ac); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #init-pct { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--ac); margin-left: auto; }
 
-  /* ── MAIN ── */
-  main { flex: 1; max-width: 960px; margin: 0 auto; padding: 3rem 2rem; width: 100%; }
-
-  h1 {
-    font-size: clamp(2rem, 5vw, 3.2rem);
-    font-weight: 300;
-    letter-spacing: -0.04em;
-    line-height: 1.1;
-    margin-bottom: 0.75rem;
-  }
-  h1 em { font-style: normal; color: var(--accent); }
-
-  .subtitle { color: var(--text2); font-size: 1rem; margin-bottom: 3rem; }
-
-  /* ── DROP ZONE ── */
   #dropzone {
-    border: 1.5px dashed var(--border2);
-    border-radius: var(--radius);
-    padding: 3rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    position: relative;
+    border: 1.5px dashed var(--b2); border-radius: var(--r); padding: 2.5rem 2rem; text-align: center;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s; user-select: none;
   }
-  #dropzone.dragover { border-color: var(--accent); background: var(--accent-dim); }
-  #dropzone input[type=file] { display: none; }
+  #dropzone:hover, #dropzone.dragover { border-color: var(--ac); background: var(--ac2); }
+  #dropzone.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  #file-input { display: none; }
+  .dz-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+  .dz-title { font-size: 0.95rem; font-weight: 500; margin-bottom: 0.3rem; }
+  .dz-sub { font-size: 0.8rem; color: var(--t2); }
 
-  .drop-icon {
-    width: 48px; height: 48px;
-    border: 1.5px solid var(--border2);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 1.25rem;
-    font-size: 1.4rem;
-  }
-  .drop-title { font-size: 1rem; font-weight: 500; margin-bottom: 0.4rem; }
-  .drop-sub { font-size: 0.85rem; color: var(--text2); }
-
-  /* ── MODEL SELECTOR ── */
-  .model-row {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-  .model-btn {
-    padding: 6px 16px;
-    border-radius: 999px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text2);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .model-btn:hover { border-color: var(--accent); color: var(--text); }
-  .model-btn.active { background: var(--accent); border-color: var(--accent); color: #0e0e0f; font-weight: 500; }
-
-  /* ── QUEUE ── */
-  #queue { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  #queue { margin-top: 1.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
 
   .item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    display: grid;
-    grid-template-columns: 52px 1fr auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    animation: fadeIn 0.2s ease;
+    background: var(--s1); border: 1px solid var(--b1); border-radius: var(--rs);
+    display: grid; grid-template-columns: 56px 1fr auto;
+    align-items: center; gap: 0.875rem; padding: 0.75rem 1rem;
+    animation: up 0.18s ease;
   }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-  .thumb {
-    width: 52px; height: 52px;
-    border-radius: 6px;
-    object-fit: cover;
-    background: var(--surface2);
-  }
-  .thumb-placeholder {
-    width: 52px; height: 52px;
-    border-radius: 6px;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-  }
-
+  @keyframes up { from { opacity:0; transform: translateY(5px); } to { opacity:1; transform:none; } }
+  .thumb { width: 56px; height: 56px; border-radius: 5px; object-fit: cover; display: block; flex-shrink: 0; background: repeating-conic-gradient(var(--s2) 0% 25%, var(--s3) 0% 50%) 0 0 / 10px 10px; }
+  .thumb-ph { width: 56px; height: 56px; border-radius: 5px; background: var(--s2); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
   .item-info { overflow: hidden; }
-  .item-name {
-    font-size: 0.88rem;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .item-meta { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
+  .item-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { font-size: 0.72rem; color: var(--t3); margin-top: 2px; }
+  .item-bar { height: 2px; background: var(--s2); border-radius: 999px; margin-top: 6px; overflow: hidden; }
+  .item-fill { height: 100%; border-radius: 999px; transition: width 0.3s; width: 0; background: var(--ac); }
+  .item-fill.ind { animation: ind 1.2s ease infinite; width: 35%; }
+  @keyframes ind { 0%{transform:translateX(-200%)} 100%{transform:translateX(450%)} }
+  .badge { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .bw { background: var(--s2); color: var(--t3); }
+  .bp { background: rgba(200,245,90,0.1); color: var(--ac); }
+  .bd { background: rgba(100,220,130,0.1); color: var(--green); }
+  .be { background: rgba(255,92,92,0.1); color: var(--red); }
 
-  .item-status { text-align: right; min-width: 80px; }
-
-  .status-badge {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    padding: 3px 8px;
-    border-radius: 999px;
-  }
-  .status-waiting { background: var(--surface2); color: var(--text3); }
-  .status-processing { background: rgba(200,245,90,0.1); color: var(--accent); }
-  .status-done { background: rgba(100,220,130,0.1); color: #64dc82; }
-  .status-error { background: rgba(255,92,92,0.1); color: var(--red); }
-
-  .progress-bar {
-    height: 2px;
-    background: var(--surface2);
-    border-radius: 999px;
-    margin-top: 6px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 999px;
-    transition: width 0.3s;
-    width: 0%;
-  }
-  .progress-fill.indeterminate {
-    animation: indeterminate 1.4s ease infinite;
-    width: 40%;
-  }
-  @keyframes indeterminate {
-    0% { transform: translateX(-200%); }
-    100% { transform: translateX(400%); }
-  }
-
-  /* ── ACTION BAR ── */
   #action-bar {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 2rem;
-    padding: 1.25rem 1.5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    gap: 1rem;
-    flex-wrap: wrap;
+    margin-top: 1.5rem; padding: 1.1rem 1.25rem;
+    background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r);
+    display: none; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   }
-  #action-bar.visible { display: flex; }
-
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-val { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.03em; }
-  .stat-label { font-size: 0.75rem; color: var(--text2); }
-  .stat-val.green { color: #64dc82; }
-  .stat-val.red { color: var(--red); }
-
-  .btn-row { display: flex; gap: 0.75rem; }
-
-  .btn {
-    padding: 10px 22px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-  }
+  #action-bar.show { display: flex; }
+  .stats { display: flex; gap: 1.25rem; }
+  .stat { display: flex; flex-direction: column; gap: 1px; }
+  .sv { font-size: 1.3rem; font-weight: 500; letter-spacing: -0.03em; }
+  .sl { font-size: 0.72rem; color: var(--t2); }
+  .sv.g { color: var(--green); } .sv.r { color: var(--red); }
+  .btns { display: flex; gap: 0.6rem; }
+  .btn { padding: 9px 20px; border-radius: var(--rs); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; transition: opacity 0.15s, transform 0.1s; }
   .btn:active { transform: scale(0.97); }
-  .btn-primary { background: var(--accent); color: #0e0e0f; }
-  .btn-primary:hover { opacity: 0.88; }
-  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-  .btn-ghost { background: var(--surface2); color: var(--text2); }
-  .btn-ghost:hover { color: var(--text); }
+  .btn-ac { background: var(--ac); color: #0e0e0f; }
+  .btn-ac:hover { opacity: 0.85; } .btn-ac:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-gh { background: var(--s2); color: var(--t2); } .btn-gh:hover { color: var(--t1); }
 
-  /* ── FOOTER ── */
-  footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid var(--border);
-    font-size: 0.78rem;
-    color: var(--text3);
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: space-between;
-  }
-  footer a { color: var(--text2); text-decoration: none; }
-  footer a:hover { color: var(--text); }
-
-  /* ── NOTICE ── */
-  .notice {
-    background: var(--accent-dim);
-    border: 1px solid rgba(200,245,90,0.2);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem 1rem;
-    font-size: 0.82rem;
-    color: var(--text2);
-    margin-bottom: 2rem;
-    line-height: 1.5;
-  }
-  .notice strong { color: var(--accent); }
+  footer { padding: 1.25rem 2rem; border-top: 1px solid var(--b1); font-size: 0.75rem; color: var(--t3); display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between; }
+  footer a { color: var(--t2); text-decoration: none; } footer a:hover { color: var(--t1); }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">Cut<span>Out</span></div>
-  <div class="badge">무료 · 일괄처리 · PNG</div>
+  <div class="pill">100% 브라우저 처리 · 서버 전송 없음</div>
 </header>
 
 <main>
-  <h1>배경을 <em>지워드립니다</em><br>한꺼번에.</h1>
-  <p class="subtitle">이미지를 올리면 AI가 배경을 제거하고 투명 PNG로 돌려드려요. ZIP으로 일괄 다운로드.</p>
+  <h1>배경을 <em>지워드립니다</em><br>한꺼번에, 로컬에서.</h1>
+  <p class="sub">
+    이미지가 서버로 전송되지 않아요 — AI 모델이 브라우저에서 직접 실행됩니다.<br>
+    처음 한 번만 모델(~170MB)을 다운로드하고, 이후엔 브라우저 캐시로 빠르게 동작해요.
+  </p>
 
-  <div class="notice">
-    <strong>무료 모드</strong> — Hugging Face 공개 API를 사용합니다. 이미지당 약 5~15초 소요되며 트래픽에 따라 느려질 수 있어요.
-    정밀도를 높이려면 <strong>BRIA RMBG 2.0</strong> 모델을 선택하세요.
+  <div id="init-banner">
+    <div class="spinner"></div>
+    <span id="init-text">AI 모델 로딩 중... (첫 실행 시 ~170MB 다운로드)</span>
+    <span id="init-pct"></span>
   </div>
 
-  <div class="model-row">
-    <button class="model-btn active" data-model="bria">BRIA RMBG 2.0 <small style="opacity:0.6">(추천)</small></button>
-    <button class="model-btn" data-model="birefnet">BiRefNet</button>
-  </div>
-
-  <div id="dropzone">
+  <div id="dropzone" class="disabled">
     <input type="file" id="file-input" multiple accept="image/*">
-    <div class="drop-icon">🖼</div>
-    <div class="drop-title">이미지를 드래그하거나 클릭해서 선택</div>
-    <div class="drop-sub">JPG, PNG, WEBP · 여러 파일 동시 업로드 가능</div>
+    <div class="dz-icon">🖼</div>
+    <div class="dz-title" id="dz-title">모델 로딩 중... 잠시만 기다려주세요</div>
+    <div class="dz-sub">JPG, PNG, WEBP · 여러 파일 동시 업로드 가능</div>
   </div>
 
   <div id="queue"></div>
 
   <div id="action-bar">
-    <div style="display:flex; gap: 1.5rem;">
-      <div class="stat">
-        <span class="stat-val" id="stat-total">0</span>
-        <span class="stat-label">총 파일</span>
-      </div>
-      <div class="stat">
-        <span class="stat-val green" id="stat-done">0</span>
-        <span class="stat-label">완료</span>
-      </div>
-      <div class="stat">
-        <span class="stat-val red" id="stat-error">0</span>
-        <span class="stat-label">오류</span>
-      </div>
+    <div class="stats">
+      <div class="stat"><span class="sv" id="st">0</span><span class="sl">총 파일</span></div>
+      <div class="stat"><span class="sv g" id="sd">0</span><span class="sl">완료</span></div>
+      <div class="stat"><span class="sv r" id="se">0</span><span class="sl">오류</span></div>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" id="btn-clear">초기화</button>
-      <button class="btn btn-primary" id="btn-download" disabled>ZIP 다운로드</button>
+    <div class="btns">
+      <button class="btn btn-gh" id="btn-clear">초기화</button>
+      <button class="btn btn-ac" id="btn-dl" disabled>ZIP 다운로드</button>
     </div>
   </div>
 </main>
 
 <footer>
-  <span>CutOut — 무료 일괄 배경제거</span>
-  <span>모델: <a href="https://huggingface.co/briaai/RMBG-2.0" target="_blank">BRIA RMBG 2.0</a> · <a href="https://huggingface.co/ZhengPeng7/BiRefNet" target="_blank">BiRefNet</a></span>
+  <span>CutOut — 브라우저 로컬 배경제거</span>
+  <span>모델: <a href="https://huggingface.co/briaai/RMBG-1.4" target="_blank">BRIA RMBG-1.4</a> via <a href="https://huggingface.co/docs/transformers.js" target="_blank">Transformers.js v3</a></span>
 </footer>
 
-<!-- JSZip -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-<script>
-const MODELS = {
-  bria: {
-    spaceId: 'briaai/BRIA-RMBG-2.0',
-    apiUrl: 'https://briaai-bria-rmbg-2-0.hf.space/run/predict',
-  },
-  birefnet: {
-    spaceId: 'ZhengPeng7/BiRefNet',
-    apiUrl: 'https://zhengpeng7-birefnet.hf.space/run/predict',
+<script type="module">
+import { AutoModel, AutoProcessor, RawImage, env }
+  from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/dist/transformers.min.js';
+
+env.backends.onnx.wasm.proxy = false;
+
+const MODEL_ID = 'briaai/RMBG-1.4';
+let model = null, processor = null;
+let files = [], processing = false;
+
+const banner   = document.getElementById('init-banner');
+const initText = document.getElementById('init-text');
+const initPct  = document.getElementById('init-pct');
+const dropzone = document.getElementById('dropzone');
+const dzTitle  = document.getElementById('dz-title');
+const fileInp  = document.getElementById('file-input');
+const queue    = document.getElementById('queue');
+const actionBar= document.getElementById('action-bar');
+const btnDl    = document.getElementById('btn-dl');
+const btnClear = document.getElementById('btn-clear');
+
+// ── 모델 로드 ──
+async function loadModel() {
+  try {
+    const cb = p => {
+      if (p.status === 'progress' && p.total) {
+        initPct.textContent = Math.round(p.loaded / p.total * 100) + '%';
+        initText.textContent = '다운로드: ' + (p.file?.split('/').pop() ?? '');
+      }
+    };
+    [model, processor] = await Promise.all([
+      AutoModel.from_pretrained(MODEL_ID, {
+        config: { model_type: 'custom' },
+        progress_callback: cb,
+      }),
+      AutoProcessor.from_pretrained(MODEL_ID, {
+        config: {
+          do_normalize: true, do_pad: false, do_rescale: true, do_resize: true,
+          image_mean: [0.5, 0.5, 0.5],
+          feature_extractor_type: 'ImageFeatureExtractor',
+          image_std: [1, 1, 1],
+          resample: 2, rescale_factor: 1/255,
+          size: { width: 1024, height: 1024 },
+        }
+      }),
+    ]);
+    banner.classList.add('hidden');
+    dropzone.classList.remove('disabled');
+    dzTitle.textContent = '이미지를 드래그하거나 클릭해서 선택';
+  } catch(err) {
+    initText.textContent = '모델 로드 실패: ' + err.message;
+    initPct.textContent = '';
+    console.error(err);
   }
-};
+}
+loadModel();
 
-let currentModel = 'bria';
-let files = [];       // { id, file, name, baseName, status, resultBlob }
-let processing = false;
-
-const dropzone  = document.getElementById('dropzone');
-const fileInput = document.getElementById('file-input');
-const queue     = document.getElementById('queue');
-const actionBar = document.getElementById('action-bar');
-const btnDownload = document.getElementById('btn-download');
-const btnClear  = document.getElementById('btn-clear');
-
-// ── Model selector ──
-document.querySelectorAll('.model-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentModel = btn.dataset.model;
-  });
-});
-
-// ── Drop zone ──
-dropzone.addEventListener('click', () => fileInput.click());
+// ── 이벤트 ──
+dropzone.addEventListener('click', () => { if (!dropzone.classList.contains('disabled')) fileInp.click(); });
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  addFiles([...e.dataTransfer.files]);
-});
-fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); addFiles([...e.dataTransfer.files]); });
+fileInp.addEventListener('change', () => addFiles([...fileInp.files]));
 
 function addFiles(newFiles) {
   newFiles.filter(f => f.type.startsWith('image/')).forEach(f => {
-    const id = Date.now() + Math.random();
-    const baseName = f.name.replace(/\.[^.]+$/, '');
-    files.push({ id, file: f, name: f.name, baseName, status: 'waiting', resultBlob: null });
+    const id = crypto.randomUUID();
+    const base = f.name.replace(/\.[^.]+$/, '');
+    files.push({ id, file: f, name: f.name, base, status: 'waiting', blob: null });
     renderItem(files[files.length - 1]);
   });
   updateStats();
-  showActionBar();
+  actionBar.classList.add('show');
   if (!processing) processQueue();
 }
 
 function renderItem(item) {
   const el = document.createElement('div');
-  el.className = 'item';
-  el.id = `item-${item.id}`;
-
-  const size = (item.file.size / 1024).toFixed(0) + ' KB';
-
+  el.className = 'item'; el.id = 'item-' + item.id;
   el.innerHTML = `
-    <div class="thumb-placeholder" id="thumb-${item.id}">🖼</div>
+    <div class="thumb-ph" id="thumb-${item.id}">🖼</div>
     <div class="item-info">
       <div class="item-name">${item.name}</div>
-      <div class="item-meta">${size}</div>
-      <div class="progress-bar"><div class="progress-fill" id="prog-${item.id}"></div></div>
+      <div class="item-meta">${(item.file.size/1024).toFixed(0)} KB</div>
+      <div class="item-bar"><div class="item-fill" id="fill-${item.id}"></div></div>
     </div>
-    <div class="item-status">
-      <span class="status-badge status-waiting" id="badge-${item.id}">대기중</span>
-    </div>
-  `;
+    <span class="badge bw" id="badge-${item.id}">대기중</span>`;
   queue.appendChild(el);
-
-  // 썸네일
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.createElement('img');
-    img.className = 'thumb';
-    img.src = e.target.result;
-    document.getElementById(`thumb-${item.id}`).replaceWith(img);
-    img.id = `thumb-${item.id}`;
+  const r = new FileReader();
+  r.onload = e => {
+    const img = Object.assign(document.createElement('img'), { className: 'thumb', src: e.target.result, id: 'thumb-' + item.id });
+    document.getElementById('thumb-' + item.id)?.replaceWith(img);
   };
-  reader.readAsDataURL(item.file);
+  r.readAsDataURL(item.file);
 }
 
-function updateItemUI(item) {
-  const badge = document.getElementById(`badge-${item.id}`);
-  const prog  = document.getElementById(`prog-${item.id}`);
-  if (!badge) return;
-
-  badge.className = 'status-badge';
-  prog.className = 'progress-fill';
-
-  if (item.status === 'waiting') {
-    badge.classList.add('status-waiting');
-    badge.textContent = '대기중';
-    prog.style.width = '0%';
-  } else if (item.status === 'processing') {
-    badge.classList.add('status-processing');
-    badge.textContent = '처리중';
-    prog.classList.add('indeterminate');
-  } else if (item.status === 'done') {
-    badge.classList.add('status-done');
-    badge.textContent = '완료 ✓';
-    prog.style.width = '100%';
-    prog.style.background = '#64dc82';
-    // 결과 미리보기
-    if (item.resultBlob) {
-      const thumb = document.getElementById(`thumb-${item.id}`);
-      if (thumb) {
-        thumb.src = URL.createObjectURL(item.resultBlob);
-        thumb.style.background = 'repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0 / 8px 8px';
-      }
-    }
-  } else if (item.status === 'error') {
-    badge.classList.add('status-error');
-    badge.textContent = '오류';
-    prog.style.width = '100%';
-    prog.style.background = 'var(--red)';
+function setUI(item) {
+  const badge = document.getElementById('badge-' + item.id);
+  const fill  = document.getElementById('fill-'  + item.id);
+  if (!badge || !fill) return;
+  badge.className = 'badge'; fill.className = 'item-fill';
+  const map = {
+    waiting:    ['bw', '대기중',   '',    ''],
+    processing: ['bp', '처리중',   'ind', ''],
+    done:       ['bd', '완료 ✓',   '',    '100%'],
+    error:      ['be', '오류',     '',    '100%'],
+  };
+  const [bc, bt, fc, fw] = map[item.status] || map.waiting;
+  badge.classList.add(bc); badge.textContent = bt;
+  if (fc) fill.classList.add(fc); if (fw) fill.style.width = fw;
+  if (item.status === 'done') fill.style.background = 'var(--green)';
+  if (item.status === 'error') fill.style.background = 'var(--red)';
+  if (item.status === 'done' && item.blob) {
+    const th = document.getElementById('thumb-' + item.id);
+    if (th?.tagName === 'IMG') th.src = URL.createObjectURL(item.blob);
   }
 }
 
 function updateStats() {
-  const total = files.length;
-  const done  = files.filter(f => f.status === 'done').length;
-  const err   = files.filter(f => f.status === 'error').length;
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-done').textContent  = done;
-  document.getElementById('stat-error').textContent = err;
-  btnDownload.disabled = done === 0;
+  document.getElementById('st').textContent = files.length;
+  document.getElementById('sd').textContent = files.filter(f => f.status === 'done').length;
+  document.getElementById('se').textContent = files.filter(f => f.status === 'error').length;
+  btnDl.disabled = !files.some(f => f.status === 'done');
 }
 
-function showActionBar() {
-  if (files.length > 0) actionBar.classList.add('visible');
-}
-
-// ── Processing ──
+// ── 처리 (순차) ──
 async function processQueue() {
-  const pending = files.filter(f => f.status === 'waiting');
-  if (pending.length === 0) { processing = false; return; }
   processing = true;
+  for (const item of files.filter(f => f.status === 'waiting')) {
+    item.status = 'processing'; setUI(item);
+    try {
+      const objUrl = URL.createObjectURL(item.file);
+      const image  = await RawImage.fromURL(objUrl);
+      URL.revokeObjectURL(objUrl);
 
-  // 동시 3개 처리
-  const concurrency = 3;
-  const chunks = [];
-  for (let i = 0; i < pending.length; i += concurrency) {
-    chunks.push(pending.slice(i, i + concurrency));
-  }
+      const { pixel_values } = await processor(image);
+      const { output } = await model({ input: pixel_values });
+      const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8'))
+                                 .resize(image.width, image.height);
 
-  for (const chunk of chunks) {
-    await Promise.all(chunk.map(item => processItem(item)));
-  }
-
-  processing = false;
-  updateStats();
-}
-
-async function processItem(item) {
-  item.status = 'processing';
-  updateItemUI(item);
-
-  try {
-    // Base64 인코딩
-    const b64 = await fileToBase64(item.file);
-    const mimeType = item.file.type || 'image/jpeg';
-
-    // Hugging Face Gradio Space API 호출
-    // BRIA와 BiRefNet 모두 동일한 Gradio /run/predict 형식
-    const model = MODELS[currentModel];
-    const payload = {
-      data: [`data:${mimeType};base64,${b64}`]
-    };
-
-    const resp = await fetch(model.apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
-
-    // 응답에서 이미지 추출 (Gradio 응답 형식)
-    let resultData = null;
-    if (json.data && json.data[0]) {
-      const d = json.data[0];
-      if (typeof d === 'string' && d.startsWith('data:')) {
-        // base64 data URL
-        resultData = dataURLtoBlob(d);
-      } else if (d && d.url) {
-        // URL 형식
-        const imgResp = await fetch(d.url);
-        resultData = await imgResp.blob();
-      } else if (d && d.path) {
-        // 상대 경로 형식
-        const base = model.apiUrl.replace('/run/predict', '');
-        const imgResp = await fetch(`${base}/file=${d.path}`);
-        resultData = await imgResp.blob();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width; canvas.height = image.height;
+      const ctx = canvas.getContext('2d');
+      const id  = ctx.createImageData(image.width, image.height);
+      for (let i = 0; i < image.width * image.height; i++) {
+        id.data[i*4]   = image.data[i*3];
+        id.data[i*4+1] = image.data[i*3+1];
+        id.data[i*4+2] = image.data[i*3+2];
+        id.data[i*4+3] = mask.data[i];
       }
+      ctx.putImageData(id, 0, 0);
+      item.blob   = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      item.status = 'done';
+    } catch(err) {
+      console.error(item.name, err);
+      item.status = 'error';
     }
-
-    if (!resultData) throw new Error('결과 이미지를 받지 못했어요');
-
-    item.resultBlob = resultData;
-    item.status = 'done';
-  } catch (err) {
-    console.error(item.name, err);
-    item.status = 'error';
-    item.errorMsg = err.message;
+    setUI(item); updateStats();
   }
-
-  updateItemUI(item);
-  updateStats();
+  processing = false;
 }
 
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result.split(',')[1]);
-    reader.onerror = () => rej(new Error('파일 읽기 실패'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function dataURLtoBlob(dataURL) {
-  const [header, data] = dataURL.split(',');
-  const mime = header.match(/:(.*?);/)[1];
-  const binary = atob(data);
-  const arr = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
-  return new Blob([arr], { type: mime });
-}
-
-// ── ZIP Download ──
-btnDownload.addEventListener('click', async () => {
-  const done = files.filter(f => f.status === 'done' && f.resultBlob);
-  if (done.length === 0) return;
-
-  btnDownload.disabled = true;
-  btnDownload.textContent = '압축 중...';
-
+// ── ZIP ──
+btnDl.addEventListener('click', async () => {
+  const done = files.filter(f => f.status === 'done' && f.blob);
+  if (!done.length) return;
+  btnDl.disabled = true; btnDl.textContent = '압축 중...';
   const zip = new JSZip();
-  done.forEach(item => {
-    // 원본 파일명의 확장자를 .png로 변경
-    const pngName = item.baseName + '.png';
-    zip.file(pngName, item.resultBlob);
-  });
-
+  done.forEach(item => zip.file(item.base + '.png', item.blob));
   const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'cutout_results.zip';
-  a.click();
-  URL.revokeObjectURL(url);
-
-  btnDownload.disabled = false;
-  btnDownload.textContent = 'ZIP 다운로드';
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'cutout_results.zip' });
+  a.click(); URL.revokeObjectURL(a.href);
+  btnDl.disabled = false; btnDl.textContent = 'ZIP 다운로드';
 });
 
-// ── Clear ──
 btnClear.addEventListener('click', () => {
-  files = [];
-  queue.innerHTML = '';
-  actionBar.classList.remove('visible');
-  fileInput.value = '';
-  processing = false;
-  updateStats();
+  files = []; queue.innerHTML = '';
+  actionBar.classList.remove('show');
+  fileInp.value = ''; processing = false; updateStats();
 });
 </script>
 </body>
-  </html>
+</html>
